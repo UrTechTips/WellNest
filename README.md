@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# WellNest - Personal Wellness Dashboard
 
-## Getting Started
+WellNest is a personalized wellness dashboard designed to help users track their mood, activities, and receive wellness tips based on the weather and personal activities. By logging daily moods and activities, WellNest provides AI-generated wellness tips on hydration, clothing, and other helpful lifestyle suggestions.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🌟 Project Overview
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The main goal of WellNest is to provide users with wellness insights based on their mood, activities, and local weather conditions. Users can:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+-   **Log Daily Mood**: Record how they’re feeling with a selection of mood icons.
+-   **Track Activities**: List daily activities and time spent on each.
+-   **Receive Wellness Tips**: Get personalized wellness advice based on the weather, such as hydration reminders or clothing recommendations.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Technology Stack
 
-## Learn More
+-   **Next.js** - Framework for building the user interface.
+-   **Tailwind CSS** - Utility-first CSS framework for styling.
+-   **Axios** - Used to fetch data from external APIs.
+-   **OpenWeatherMap API** - Provides real-time weather data.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📋 Features
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+-   **Dark Mode**: User-friendly dark theme throughout.
+-   **Mood Tracker**: Allows users to record and reflect on their daily mood.
+-   **Activity Log**: Users can log daily activities for an overview of their day.
+-   **Real-Time Weather**: Displays current weather data based on location.
+-   **Personalized Wellness Tips**: AI-generated suggestions based on weather and mood.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚀 Getting Started
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Prerequisites
+
+Ensure the following are installed on your machine:
+
+-   [Node.js](https://nodejs.org/)
+-   [npm](https://www.npmjs.com/)
+
+### Installation
+
+1. **Clone the repository**:
+
+    ```bash
+    git clone https://github.com/your-username/wellnest-dashboard.git
+    cd wellnest-dashboard
+
+    ```
+
+2. Install dependencies:
+    ```bash
+    npm install
+    ```
+3. Add Environment Variables:
+
+    - Create a `.env.local` file at the root of your project.
+    - Add your **OpenWeatherMap** API Key:
+
+    ```plaintext
+    NEXT_PUBLIC_WEATHER_API_KEY=your_openweathermap_api_key
+    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+    ```
+
+4. Running the Application:
+   To run the project locally:
+
+    ```bash
+    npm run dev
+    ```
+
+    Your application will be running on http://localhost:3000.
+
+## 🌤️ API Configuration
+
+This project uses the **OpenWeatherMap API** to display real-time weather information, enhancing the context for wellness tips.
+
+1. Sign up at [OpenWeatherMap](https://openweathermap.org/) to get your API key.
+2. Add it to the `.env.local` file as shown above.
+
+## 🤖 AI Integration with Gemini API
+
+WellNest utilizes the Gemini API to generate AI-powered wellness tips based on:
+
+-   User mood
+-   Logged activities
+-   Weather data
+
+To use the Gemini API:
+
+1. Obtain an API key from the [Gemini API](https://aistudio.google.com/app/apikey).
+2. Add the key to `.env.local`:
+3. The AI model will analyze the data and generate personalized wellness suggestions.
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+## 📧 Contact
+
+For questions or suggestions, feel free to reach out:
+
+-   **Email**: saisrinadhch@gmail.com
+-   **Github**: [UrTechTips](https://github.com/UrTechTips)
+
+Enjoy your wellness journey with WellNest!
