@@ -26,7 +26,6 @@ const Navbar = () => {
 				<div className="flex lg:flex-1">
 					<Link href="/" className="-m-1.5 p-1.5 flex items-center">
 						<span className="sr-only">WellNest</span>
-						<img alt="WellNest Logo" src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600" className="h-8 w-auto mr-2" />
 						<span className="text-lg font-bold text-indigo-600">WellNest Dashboard</span>
 					</Link>
 				</div>
