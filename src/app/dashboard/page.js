@@ -42,11 +42,12 @@ const Page = () => {
 	const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
 	const [isCookieBannerVisible, setIsCookieBannerVisible] = useState(true);
 	const [weather, setWeather] = useState(null);
-	const [mood, setMood] = useState("Happy");
+	const [mood, setMood] = useState(2);
 	const [activities, setActivities] = useState([]);
 	const [wellnessTip, setWellnessTip] = useState("");
 	const [addActivityOpen, setAddActivityOpen] = useState(false);
 	const [allActivities, SetallActivities] = useState({});
+	const [allMoods, setAllMoods] = useState({});
 
 	useEffect(() => {
 		const fetchWeather = async () => {
@@ -109,10 +110,19 @@ const Page = () => {
 					}
 					const activitiesData = userSnapshot.data().activites;
 					SetallActivities(activitiesData);
+					const moodsData = userSnapshot.data().moods;
+					setAllMoods(moodsData);
 					if (activitiesData && activitiesData[day.toLowerCase()]) {
 						setActivities(activitiesData[day.toLowerCase()]);
 					} else {
 						console.error(`No activities found for ${day.toLowerCase()}`);
+						setActivities([]);
+					}
+					if (moodsData && moodsData[day.toLowerCase()]) {
+						console.log(moodsData);
+						setMood(getMoodNumberFromName(moodsData[day.toLowerCase()]));
+					} else {
+						console.error(`No Moods found for ${day.toLowerCase()}`);
 						setActivities([]);
 					}
 				}
@@ -138,6 +148,35 @@ const Page = () => {
 		}
 	};
 
+	const moodOptions = [
+		{ emoji: "😡", label: "Angry" },
+		{ emoji: "😠", label: "Irritated" },
+		{ emoji: "😢", label: "Sad" },
+		{ emoji: "🙂", label: "Okay" },
+		{ emoji: "😊", label: "Happy" },
+	];
+	const getMoodNumberFromName = (moodName) => {
+		console.log(moodName);
+		return moodOptions.findIndex((mood) => mood.label === moodName);
+	};
+
+	const handleMoodChange = (e) => {
+		setMood(parseInt(e.target.value, 10));
+	};
+
+	const handleSaveMood = async () => {
+		try {
+			await updateDoc(doc(db, "users", user.uid), {
+				moods: {
+					...allMoods,
+					[day.toLowerCase()]: moodOptions[mood].label,
+				},
+			});
+		} catch (error) {
+			console.log(error);
+		}
+	};
+
 	return (
 		<>
 			<Dialog open={addActivityOpen} onClose={setAddActivityOpen} className="relative z-10">
@@ -149,12 +188,25 @@ const Page = () => {
 					<div className="px-6 py-8 mx-auto max-w-7xl">
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 							{/* Mood Section */}
-							<div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700">
+							<div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700 relative flex flex-col">
 								<h2 className="text-2xl font-semibold">Mood of the Day</h2>
-								<div className="mt-4 text-center">
-									<span className="text-4xl">😊</span> {/* Emoji for Mood */}
-									<p className="mt-2">Feelings: {mood}</p>
+								<div className="mt-4 text-center relative flex-grow">
+									{/* Emoji for Mood */}
+									<span className="text-4xl">{moodOptions[mood].emoji}</span>
+									<p className="mt-2">{moodOptions[mood].label}</p>
+
+									<div className="relative mb-6 mt-3">
+										<input id="labels-range-input" type="range" value={mood} min="0" max="4" onChange={handleMoodChange} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
+										<span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">Angry</span>
+										<span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">Irritated</span>
+										<span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">Sad</span>
+										<span className="text-sm text-gray-500 dark:text-gray-400 absolute start-3/4 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">Okay</span>
+										<span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">Happy</span>
+									</div>
 								</div>
+								<button className="mt-4 bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-500 transition-all max-w-32 self-end" onClick={handleSaveMood}>
+									Save Mood
+								</button>
 							</div>
 
 							{/* Activities Section */}

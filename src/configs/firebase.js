@@ -2,13 +2,20 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+const apiKey = process.env.NEXT_PUBLIC_FIREBASE_apiKey;
+const authDomain = process.env.NEXT_PUBLIC_FIREBASE_authDomain;
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_projectId;
+const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_storageBucket;
+const messagingSenderId = process.env.NEXT_PUBLIC_FIREBASE_messagingSenderId;
+const appId = process.env.NEXT_PUBLIC_FIREBASE_appId;
+
 const firebaseConfig = {
-	apiKey: "AIzaSyA_pvVp7hstoCPiX7YzoQlsZirMUFyf9xM",
-	authDomain: "wellnest-b5ba3.firebaseapp.com",
-	projectId: "wellnest-b5ba3",
-	storageBucket: "wellnest-b5ba3.firebasestorage.app",
-	messagingSenderId: "250599569566",
-	appId: "1:250599569566:web:f249642954a3050b5ba38f",
+	apiKey: apiKey,
+	authDomain: authDomain,
+	projectId: projectId,
+	storageBucket: storageBucket,
+	messagingSenderId: messagingSenderId,
+	appId: appId,
 };
 
 const app = initializeApp(firebaseConfig);
