@@ -58,23 +58,6 @@ const Page = () => {
 	const [isLoadingWeeklyTip, setIsLoadingWeeklyTip] = useState(false);
 	const [isLoadingUserActivities, setIsLoadingUserActivities] = useState(false);
 
-	// Helper functions for caching
-	const getCachedTip = (key, expirationHours = 3) => {
-		const cachedData = JSON.parse(localStorage.getItem(key));
-		if (cachedData && (new Date() - new Date(cachedData.timestamp)) / 1000 / 3600 < expirationHours) {
-			return cachedData.value;
-		}
-		return null;
-	};
-
-	const cacheTip = (key, value) => {
-		const data = {
-			value,
-			timestamp: new Date().toISOString(),
-		};
-		localStorage.setItem(key, JSON.stringify(data));
-	};
-
 	// Fetch weather data and update the state
 	useEffect(() => {
 		const fetchWeather = async () => {
@@ -104,11 +87,7 @@ const Page = () => {
 	useEffect(() => {
 		const fetchDailyTip = async () => {
 			setIsLoadingDailyTip(true);
-			const cachedTip = getCachedTip("wellnessTip");
-			if (cachedTip) {
-				setWellnessTip(cachedTip);
-				setIsLoadingDailyTip(false);
-			} else if (weather) {
+			if (weather) {
 				try {
 					const { temp, humidity } = weather.main;
 					const weatherDescription = weather.weather[0].description;
@@ -122,7 +101,6 @@ const Page = () => {
 					if (!tipResponse.ok) throw new Error(`Tip fetch failed: ${tipResponse.statusText}`);
 					const tipData = await tipResponse.json();
 					setWellnessTip(tipData.message);
-					cacheTip("wellnessTip", tipData.message);
 				} catch (error) {
 					console.error("Error fetching daily wellness tip:", error);
 				} finally {
@@ -137,29 +115,23 @@ const Page = () => {
 	useEffect(() => {
 		const fetchWeeklyTip = async () => {
 			setIsLoadingWeeklyTip(true);
-			const cachedWeeklyTip = getCachedTip("weeklyTip");
-			if (cachedWeeklyTip) {
-				setWeeklyTip(cachedWeeklyTip);
+
+			try {
+				const tipResponse = await fetch("https://wellnestapi.onrender.com/getWeeklyTip", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						moods: allMoods,
+						activities: allActivities,
+					}),
+				});
+				if (!tipResponse.ok) throw new Error(`Weekly Tip fetch failed: ${tipResponse.statusText}`);
+				const tipData = await tipResponse.json();
+				setWeeklyTip(tipData.message);
+			} catch (error) {
+				console.error("Error fetching weekly wellness tip:", error);
+			} finally {
 				setIsLoadingWeeklyTip(false);
-			} else {
-				try {
-					const tipResponse = await fetch("https://wellnestapi.onrender.com/getWeeklyTip", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({
-							moods: allMoods,
-							activities: allActivities,
-						}),
-					});
-					if (!tipResponse.ok) throw new Error(`Weekly Tip fetch failed: ${tipResponse.statusText}`);
-					const tipData = await tipResponse.json();
-					setWeeklyTip(tipData.message);
-					cacheTip("weeklyTip", tipData.message);
-				} catch (error) {
-					console.error("Error fetching weekly wellness tip:", error);
-				} finally {
-					setIsLoadingWeeklyTip(false);
-				}
 			}
 		};
 
