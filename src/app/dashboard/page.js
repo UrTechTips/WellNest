@@ -40,66 +40,135 @@ const Page = () => {
 	const user = useContext(UserContext).user;
 	const db = getFirestore();
 	const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
+
+	// State variables
 	const [isCookieBannerVisible, setIsCookieBannerVisible] = useState(true);
 	const [weather, setWeather] = useState(null);
 	const [mood, setMood] = useState(2);
 	const [activities, setActivities] = useState([]);
 	const [wellnessTip, setWellnessTip] = useState("");
+	const [weeklyTip, setWeeklyTip] = useState("");
 	const [addActivityOpen, setAddActivityOpen] = useState(false);
-	const [allActivities, SetallActivities] = useState({});
+	const [allActivities, setAllActivities] = useState({});
 	const [allMoods, setAllMoods] = useState({});
 
+	// Loading states
+	const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+	const [isLoadingDailyTip, setIsLoadingDailyTip] = useState(false);
+	const [isLoadingWeeklyTip, setIsLoadingWeeklyTip] = useState(false);
+	const [isLoadingUserActivities, setIsLoadingUserActivities] = useState(false);
+
+	// Helper functions for caching
+	const getCachedTip = (key, expirationHours = 3) => {
+		const cachedData = JSON.parse(localStorage.getItem(key));
+		if (cachedData && (new Date() - new Date(cachedData.timestamp)) / 1000 / 3600 < expirationHours) {
+			return cachedData.value;
+		}
+		return null;
+	};
+
+	const cacheTip = (key, value) => {
+		const data = {
+			value,
+			timestamp: new Date().toISOString(),
+		};
+		localStorage.setItem(key, JSON.stringify(data));
+	};
+
+	// Fetch weather data and update the state
 	useEffect(() => {
 		const fetchWeather = async () => {
+			setIsLoadingWeather(true);
 			if (navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition(async (position) => {
-					console.log(position.coords);
 					try {
 						const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${position.coords.latitude}&lon=${position.coords.longitude}&appid=${apiKey}`);
-						if (!weatherResponse.ok) {
-							throw new Error(`Weather fetch failed: ${weatherResponse.statusText}`);
-						}
+						if (!weatherResponse.ok) throw new Error(`Weather fetch failed: ${weatherResponse.statusText}`);
 						const weatherData = await weatherResponse.json();
-						const { temp, humidity } = weatherData.main;
-						const weatherDescription = weatherData.weather[0].description;
-						const cityName = weatherData.name;
-
 						setWeather(weatherData);
-
-						try {
-							const tipResponse = await fetch(`http://127.0.0.1:8080/getTip`, {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-								},
-								body: JSON.stringify({
-									temp: temp,
-									humidity: humidity,
-									weatherDescription: weatherDescription,
-									cityName: cityName,
-								}),
-							});
-							if (!tipResponse.ok) {
-								throw new Error(`Tip fetch failed: ${tipResponse.statusText}`);
-							}
-							const tipData = await tipResponse.json();
-							console.log(tipData.message);
-							setWellnessTip(tipData.message);
-						} catch (tipError) {
-							console.error("Error fetching wellness tip:", tipError);
-						}
-					} catch (weatherError) {
-						console.error("Error fetching weather data:", weatherError);
+					} catch (error) {
+						console.error("Error fetching weather data:", error);
+					} finally {
+						setIsLoadingWeather(false);
 					}
 				});
+			} else {
+				setIsLoadingWeather(false);
 			}
 		};
 
 		fetchWeather();
 	}, [apiKey]);
 
+	// Fetch daily tip based on weather and update the state
 	useEffect(() => {
-		const fetchActivities = async () => {
+		const fetchDailyTip = async () => {
+			setIsLoadingDailyTip(true);
+			const cachedTip = getCachedTip("wellnessTip");
+			if (cachedTip) {
+				setWellnessTip(cachedTip);
+				setIsLoadingDailyTip(false);
+			} else if (weather) {
+				try {
+					const { temp, humidity } = weather.main;
+					const weatherDescription = weather.weather[0].description;
+					const cityName = weather.name;
+
+					const tipResponse = await fetch("https://wellnestapi.onrender.com/getTip", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ temp, humidity, weatherDescription, cityName, mood, activities }),
+					});
+					if (!tipResponse.ok) throw new Error(`Tip fetch failed: ${tipResponse.statusText}`);
+					const tipData = await tipResponse.json();
+					setWellnessTip(tipData.message);
+					cacheTip("wellnessTip", tipData.message);
+				} catch (error) {
+					console.error("Error fetching daily wellness tip:", error);
+				} finally {
+					setIsLoadingDailyTip(false);
+				}
+			}
+		};
+
+		fetchDailyTip();
+	}, [weather, mood, activities]);
+
+	useEffect(() => {
+		const fetchWeeklyTip = async () => {
+			setIsLoadingWeeklyTip(true);
+			const cachedWeeklyTip = getCachedTip("weeklyTip");
+			if (cachedWeeklyTip) {
+				setWeeklyTip(cachedWeeklyTip);
+				setIsLoadingWeeklyTip(false);
+			} else {
+				try {
+					const tipResponse = await fetch("https://wellnestapi.onrender.com/getWeeklyTip", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							moods: allMoods,
+							activities: allActivities,
+						}),
+					});
+					if (!tipResponse.ok) throw new Error(`Weekly Tip fetch failed: ${tipResponse.statusText}`);
+					const tipData = await tipResponse.json();
+					setWeeklyTip(tipData.message);
+					cacheTip("weeklyTip", tipData.message);
+				} catch (error) {
+					console.error("Error fetching weekly wellness tip:", error);
+				} finally {
+					setIsLoadingWeeklyTip(false);
+				}
+			}
+		};
+
+		fetchWeeklyTip();
+	}, [allMoods, allActivities]);
+
+	useEffect(() => {
+		const fetchUserActivities = async () => {
+			setIsLoadingUserActivities(true);
 			try {
 				if (user) {
 					const userDoc = doc(db, "users", user.uid);
@@ -109,26 +178,26 @@ const Page = () => {
 						return;
 					}
 					const activitiesData = userSnapshot.data().activites;
-					SetallActivities(activitiesData);
+					setAllActivities(activitiesData);
 					const moodsData = userSnapshot.data().moods;
 					setAllMoods(moodsData);
+
+					// Fetch day-specific activities and moods if available
 					if (activitiesData && activitiesData[day.toLowerCase()]) {
 						setActivities(activitiesData[day.toLowerCase()]);
-					} else {
-						console.error(`No activities found for ${day.toLowerCase()}`);
-						setActivities([]);
 					}
 					if (moodsData && moodsData[day.toLowerCase()]) {
-						console.log(moodsData);
 						setMood(getMoodNumberFromName(moodsData[day.toLowerCase()]));
-					} else {
-						console.error(`No Moods found for ${day.toLowerCase()}`);
-						setActivities([]);
 					}
 				}
-			} catch (error) {}
+			} catch (error) {
+				console.error("Error fetching user data:", error);
+			} finally {
+				setIsLoadingUserActivities(false);
+			}
 		};
-		fetchActivities();
+
+		fetchUserActivities();
 	}, [user]);
 
 	const handleAddActivity = (name) => {
@@ -230,26 +299,30 @@ const Page = () => {
 							{/* Weather Section */}
 							<div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700">
 								<h2 className="text-2xl font-semibold">Today&apos;s Weather</h2>
-								<div className="mt-4">
-									{weather ? (
-										<>
-											<div className="flex flex-col gap-2">
-												<span>Location: {weather.name}</span>
-												<span>Temperature: {Math.round((weather.main.temp - 273.15 + Number.EPSILON) * 100) / 100}°C</span>
-												<span>Feels Like: {Math.round((weather.main.feels_like - 273.15 + Number.EPSILON) * 100) / 100}°C</span>
-												<span>Humidity: {weather.main.humidity}%</span>
-												<span>Condition: {weather.weather[0].main}</span>
-											</div>
-										</>
-									) : (
-										<p>Loading weather data...</p>
-									)}
-								</div>
+								{isLoadingWeather ? (
+									<>Loading</>
+								) : (
+									<div className="mt-4">
+										{weather ? (
+											<>
+												<div className="flex flex-col gap-2">
+													<span>Location: {weather.name}</span>
+													<span>Temperature: {Math.round((weather.main.temp - 273.15 + Number.EPSILON) * 100) / 100}°C</span>
+													<span>Feels Like: {Math.round((weather.main.feels_like - 273.15 + Number.EPSILON) * 100) / 100}°C</span>
+													<span>Humidity: {weather.main.humidity}%</span>
+													<span>Condition: {weather.weather[0].main}</span>
+												</div>
+											</>
+										) : (
+											<p>Loading weather data...</p>
+										)}
+									</div>
+								)}
 							</div>
 
 							{/* AI Wellness Tips Section */}
 							<div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700 col-span-3 row-start-2">
-								<h2 className="text-2xl font-semibold">AI Wellness Tip</h2>
+								<h2 className="text-2xl font-semibold">Today&#39;s Wellness Tip</h2>
 								{wellnessTip ? (
 									<>
 										<p className="mt-4 text-lg">{wellnessTip.summary}</p>
@@ -259,6 +332,20 @@ const Page = () => {
 										<p className="mt-1 text-lg">{wellnessTip.properties.food}</p>
 										<h4 className="mt-2 text-xl font-bold">Others: </h4>
 										<p className="mt-1 text-lg">{wellnessTip.properties.others}</p>
+									</>
+								) : (
+									<p className="mt-4 text-lg">No Daily Tip at the moment.</p>
+								)}
+							</div>
+
+							{/* Weekly Wellness Tips Section */}
+							<div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700 col-span-3 row-start-3">
+								<h2 className="text-2xl font-semibold">This Week&#39;s Wellness Tip</h2>
+								{isLoadingWeeklyTip ? (
+									<>Loading</>
+								) : wellnessTip ? (
+									<>
+										<p className="mt-4 text-lg">{weeklyTip.summary}</p>
 									</>
 								) : (
 									<p className="mt-4 text-lg">No Daily Tip at the moment.</p>
